@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>csv to sqlite viewer</title>
+	<!-- Font Awesome -->
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css">
+<!-- Google Fonts -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap">
+<!-- Bootstrap core CSS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css" rel="stylesheet">
+<!-- Material Design Bootstrap -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.19.1/css/mdb.min.css" rel="stylesheet">
+</head>
+<body>
+
+<table class="table">
+  <thead>
+    <tr class="heads">
+      <th scope="col">#</th>
+    </tr>
+  </thead>
+  <tbody class="table_body">
+  
+  </tbody>
+</table>
+
+<!-- JQuery -->
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<!-- Bootstrap tooltips -->
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.4/umd/popper.min.js"></script>
+<!-- Bootstrap core JavaScript -->
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/js/bootstrap.min.js"></script>
+<!-- MDB core JavaScript -->
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.19.1/js/mdb.min.js"></script>
+
+<script>
+$.get('csvtosqlite.php',(data)=>{
+	data = JSON.parse(data)
+	//Set titles of table
+	let key = 0;
+	data['column_names'].forEach((column_name)=>{
+		if(key<3){
+			$('.heads').append(`<th scope="col">${column_name}`)
+		}
+		key++;
+	})
+	//Añado el modal por JS par añadir nuevos registros
+	$('.heads').append(`<!-- Button trigger modal -->
+		<button type="button" class="btn btn-success" data-toggle="modal" data-target="#basicExampleModal">
+		  Nuevo registro
+		</button>
+
+		<!-- Modal -->
+		<div class="modal fade" id="basicExampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+		  aria-hidden="true">
+		  <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="exampleModalLabel">Nuevo Registro</h5>
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+		          <span aria-hidden="true">&times;</span>
+		        </button>
+		      </div>
+		      <div class="modal-body">
+		    <input type="name" id="modal-name" class="form-control mb-4" placeholder="name">
+		    <input type="model" id="modal-model" class="form-control mb-4" placeholder="model">
+		    <input type="manufacturer" id="modal-manufacturer" class="form-control mb-4" placeholder="manufacturer">
+		    <input type="cost_in_credits" id="modal-cost_in_credits" class="form-control mb-4" placeholder="cost_in_credits">
+		    <input id="modal-length" class="form-control mb-4" placeholder="length">
+		    <input id="modal-max_atmosphering_speed" class="form-control mb-4" placeholder="max_atmosphering_speed">
+		    <input id="modal-crew" class="form-control mb-4" placeholder="crew">
+		    <input id="modal-passengers" class="form-control mb-4" placeholder="passengers">
+		    <input id="modal-cargo_capacity" class="form-control mb-4" placeholder="cargo_capacity">
+		    <input id="modal-consumables" class="form-control mb-4" placeholder="consumables">
+			<input id="modal-hyperdrive_rating" class="form-control mb-4" placeholder="hyperdrive_rating">
+		    <input id="modal-mglt" class="form-control mb-4" placeholder="mglt">
+		    <input id="modal-starship_class" class="form-control mb-4" placeholder="starship_class">
+		    <input id="modal-created" class="form-control mb-4" placeholder="created" disabled>
+		    <input id="modal-edited" class="form-control mb-4" placeholder="edited" disabled>
+		    <input id="modal-url" class="form-control mb-4" placeholder="url">
+		    <input id="modal-id" class="form-control mb-4" placeholder="id" disabled>
+		      </div>
+		      <div class="modal-footer">
+		        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+		        <button type="button" class="btn btn-primary" id="submit-modal">Hecho</button>
+		      </div>
+		    </div>
+		  </div>
+		</div>`)
+	delete data["column_names"];
+	let master_key = 0;
+	Object.entries(data).forEach((item)=>{
+		let tr = document.createElement('tr')
+		let th = document.createElement('th')
+		th.innerText = parseInt(item[0])+1
+		tr.appendChild(th)
+		let key = 0;
+		let td = document.createElement('td')
+		Object.entries(item[1]).forEach((items)=>{
+			if(key<3){
+			let td = document.createElement('td')
+			td.innerText = items[1]
+			tr.appendChild(td)
+			key++;
+			}
+			if(items[0] == "id"){
+				td.innerHTML = `<button class="btn-danger" id="registro-${items[1]}">Eliminar registro</button>`
+			}
+			$('#modal-id').val(parseInt(items[1])+1)
+		})
+			td.innerHTML += `<button class="btn-primary"><a href="moreinfo.php?id=${master_key}">Ver mas</a></button>`
+			tr.appendChild(td)
+			$('.table_body').append(tr)
+			master_key++;
+	})
+	$('.btn-danger').on('click',(el)=>{
+		let id_to_delete = $(el.currentTarget).attr('id').replace(/registro-/,'');
+		$.post({
+			url: 'delete_register.php',
+			data: {id:id_to_delete}
+		}).done((data)=>{
+			data = JSON.parse(data)
+			if(data.response===true){
+				alert('El registro fue eliminado')
+				location.reload();
+			}
+		})
+	})
+	$('[placeholder="created"]').val(new Date())
+	$('[placeholder="edited"]').val(new Date())
+	$('#submit-modal').on('click',()=>{
+		if(!checkInputs()){
+			$.post({
+				url:'addregister.php',
+				data:{
+					name:$('#modal-name').val(),
+					model:$('#modal-model').val(),
+					manufacturer:$('#modal-manufacturer').val(),
+					cost_in_credits:$('#modal-cost_in_credits').val(),
+					length:$('#modal-length').val(),
+					max_atmosphering_speed:$('#modal-max_atmosphering_speed').val(),
+					crew:$('#modal-crew').val(),
+					passengers:$('#modal-passengers').val(),
+					cargo_capacity:$('#modal-cargo_capacity').val(),
+					consumables:$('#modal-consumables').val(),
+					hyperdrive_rating:$('#modal-hyperdrive_rating').val(),
+					mglt:$('#modal-mglt').val(),
+					starship_class:$('#modal-starship_class').val(),
+					created:$('#modal-created').val(),
+					edited:$('#modal-edited').val(),
+					url:$('#modal-url').val(),
+					id:$('#modal-id').val()
+				}
+			}).done((response)=>{
+					 alert('registro insertado');
+					 location.reload();
+			})
+		}
+		else{
+			alert('Se debe poner un valor en cada input')
+		}
+	})
+	function checkInputs(){
+		let errors = false
+		//Utilizo querySelectorAll ya que los unicos inputs que hay son para añadir un nuevo registro, si hubiesen más los pondria por Id, clases etc
+		document.querySelectorAll('input').forEach((input)=>{
+			if($(input).val()==""){
+				errors = true
+				$(input).addClass('red')
+			}
+			else{
+				$(input).removeClass('red')
+			}
+		})
+		return errors;
+	}
+})
+
+</script>
+</body>
+</html>
